@@ -1,7 +1,6 @@
 import 'package:app_berita/config/constant.dart';
 import 'package:dio/dio.dart';
 
-import 'package:retrofit/http.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'api_service.g.dart';

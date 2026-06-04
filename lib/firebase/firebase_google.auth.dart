@@ -30,7 +30,7 @@ class FirebaseGoogleAuth {
         debugPrint(e.toString());
       }
 
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn
+      final GoogleSignInAccount googleSignInAccount = await _googleSignIn
           .authenticate();
 
       if (googleSignInAccount == null) {

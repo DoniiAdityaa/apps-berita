@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:app_berita/model/user_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,6 +23,26 @@ class UserPreference {
 
   bool getOnChat() {
     return prefs.getBool("chat") ?? false;
+  }
+
+  Future<void> setUser(UserModel data) async {
+    await prefs.setString("user", json.encode(data.toJson()));
+  }
+
+  UserModel getUser() {
+    if (prefs.getString("user") != null) {
+      try {
+        return UserModel.fromJson(json.decode(prefs.getString("user") ?? ""));
+      } catch (e) {
+        return UserModel();
+      }
+    } else {
+      return UserModel();
+    }
+  }
+
+  void clearData() {
+    prefs.clear();
   }
 
   // bookmark articles
