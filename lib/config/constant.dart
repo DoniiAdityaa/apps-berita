@@ -7,7 +7,7 @@ const String appId = "6478091723";
 const String baseUrlProduction = "https://newsapi.org/v2";
 const String baseUrlSandbox = "https://newsapi.org/v2/";
 const String baseUrl = isProduction ? baseUrlProduction : baseUrlSandbox;
-const String baseApi = "$baseUrl/api/v1";
+const String baseApi = baseUrl;
 
 /// is production
 const bool isProduction = false;

@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:timeago/timeago.dart' as timeago;
+import 'package:cached_network_image/cached_network_image.dart';
+
+import 'package:app_berita/features/home/cubit/home_news_cubit.dart';
+import 'package:app_berita/model/article_model.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
+import 'package:app_berita/ui/shared_widget/loading_indicator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,8 +19,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Category configuration
-  int _selectedCategoryIndex = 0;
   final List<String> categories = [
     'All',
     'Politics',
@@ -22,112 +28,11 @@ class _HomeScreenState extends State<HomeScreen> {
     'Health',
   ];
 
-  // Dummy News for Trending (Horizontal Scroll)
-  final List<Map<String, String>> dummyNews = [
-    {
-      'title':
-          'Unmasking the Truth: Investigative Report Exposes Widespread Political Corruption',
-      'source': 'CNN News',
-      'time': '3 days ago',
-      'category': 'Politics',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&auto=format&fit=crop&q=80',
-      'url': 'https://edition.cnn.com/politics',
-    },
-    {
-      'title':
-          'Breaking News: Global Economic Agreement Set to Reshape the Market',
-      'source': 'USA Today',
-      'time': '2 days ago',
-      'category': 'Business',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&auto=format&fit=crop&q=80',
-      'url': 'https://www.usatoday.com/money',
-    },
-    {
-      'title':
-          'New Breakthrough: Artificial Intelligence Reaches Human Milestone',
-      'source': 'BBC News',
-      'time': '1 day ago',
-      'category': 'Technology',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=600&auto=format&fit=crop&q=80',
-      'url': 'https://www.bbc.com/news/technology',
-    },
-  ];
-
-  // Dummy News for Recent Stories (Vertical Scroll, filterable)
-  final List<Map<String, String>> dummyRecentStories = [
-    {
-      'title':
-          'Revolutionizing the Future: Breakthrough Technology Set to Transform Industries',
-      'authorName': 'Jane Cooper',
-      'authorAvatar':
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100',
-      'time': '1 min ago',
-      'category': 'Technology',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&auto=format&fit=crop&q=80',
-      'url': 'https://www.theverge.com/tech',
-    },
-    {
-      'title': 'Ukraine War: Drone Strikes Deep Inside Russian Territory',
-      'authorName': 'Alexander S.',
-      'authorAvatar':
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100',
-      'time': '4 hours ago',
-      'category': 'Politics',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1444653389962-8149286c578a?w=400&auto=format&fit=crop&q=80',
-      'url': 'https://www.reuters.com/world',
-    },
-    {
-      'title':
-          'Inflation Rates Drop Faster Than Expected as Global Markets Rally',
-      'authorName': 'Robert Fox',
-      'authorAvatar':
-          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100',
-      'time': '6 hours ago',
-      'category': 'Business',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=400&auto=format&fit=crop&q=80',
-      'url': 'https://www.wsj.com/market-data',
-    },
-    {
-      'title':
-          'NASA Webb Telescope Captures Breathtaking New Images of the Pillar of Creation',
-      'authorName': 'Albert Einstein',
-      'authorAvatar':
-          'https://images.unsplash.com/photo-1628157582853-a796fa650a6a?auto=format&fit=crop&q=80&w=100',
-      'time': '8 hours ago',
-      'category': 'Science',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&auto=format&fit=crop&q=80',
-      'url': 'https://www.nasa.gov/mission_pages/webb/main',
-    },
-    {
-      'title':
-          'New Vaccine Shows High Promise in Preventing Malaria Transmission',
-      'authorName': 'Sarah Jenkins',
-      'authorAvatar':
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100',
-      'time': '12 hours ago',
-      'category': 'Health',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&auto=format&fit=crop&q=80',
-      'url': 'https://www.who.int/news-room',
-    },
-  ];
-
-  // Helper method to filter recent stories based on selected category index
-  List<Map<String, String>> get _filteredRecentStories {
-    final selectedCategory = categories[_selectedCategoryIndex];
-    if (selectedCategory == 'All') {
-      return dummyRecentStories;
-    }
-    return dummyRecentStories
-        .where((story) => story['category'] == selectedCategory)
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    // Memanggil API pertama kali saat layar terbuka
+    context.read<HomeNewsCubit>().fetchHomeData();
   }
 
   @override
@@ -135,40 +40,142 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: bgLight,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Welcome Section (Profile name & notification)
-              _buildWelcomeSection(),
-
-              // 2. Trending Section (Horizontal Scroll)
-              _buildTrendingSection(),
-
-              // 3. Category Filter Section (Horizontal chips list)
-              _buildCategorySection(),
-
-              // 4. Recent Stories Section (Vertical List)
-              _buildRecentStoriesSection(),
-            ],
-          ),
+        child: BlocBuilder<HomeNewsCubit, HomeNewsState>(
+          builder: (context, state) {
+            if (state is HomeNewsLoading) {
+              return _buildLoadingState();
+            } else if (state is HomeNewsError) {
+              return _buildErrorState(state.message, context);
+            } else if (state is HomeNewsLoaded) {
+              return _buildLoadedState(state);
+            }
+            return const SizedBox.shrink();
+          },
         ),
       ),
     );
   }
 
   // ===========================================================================
-  // Sub-Widget Helper Methods (Clean Code)
+  // LAYOUT STATES (LOADING, ERROR, LOADED)
   // ===========================================================================
 
-  /// Header welcome section with profile avatar and notifications badge
+  /// State Loading Awal (Menampilkan Shimmer di seluruh bagian)
+  Widget _buildLoadingState() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildWelcomeSectionPlaceholder(),
+          _buildTrendingSectionPlaceholder(),
+          _buildCategorySectionPlaceholder(),
+          _buildRecentStoriesPlaceholder(),
+        ],
+      ),
+    );
+  }
+
+  /// State Error (Menampilkan pesan error dan tombol Retry)
+  Widget _buildErrorState(String message, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 60, color: errorColor),
+            const SizedBox(height: 16),
+            const Text(
+              'Oops! Something went wrong',
+              style: TextStyle(
+                fontFamily: 'poppins',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textNeutralPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'poppins',
+                fontSize: 14,
+                color: textNeutralSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {
+                context.read<HomeNewsCubit>().fetchHomeData();
+              },
+              child: const Text(
+                'Retry',
+                style: TextStyle(
+                  fontFamily: 'poppins',
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// State Loaded (Menampilkan data asli dari API)
+  Widget _buildLoadedState(HomeNewsLoaded state) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await context.read<HomeNewsCubit>().fetchHomeData();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Welcome Section
+            _buildWelcomeSection(),
+
+            // 2. Trending Section
+            _buildTrendingSection(state.trendingNews),
+
+            // 3. Category Filter Section
+            _buildCategorySection(state.selectedCategory),
+
+            // 4. Recent Stories Section (Menggunakan shimmer khusus jika hanya kategori yang reload)
+            if (state.isRecentLoading)
+              _buildRecentStoriesPlaceholder()
+            else
+              _buildRecentStoriesSection(state.recentNews),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // SUB-WIDGET COMPONENT DENGAN DATA ASLI API
+  // ===========================================================================
+
   Widget _buildWelcomeSection() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Profile Photo & Name
           Row(
             children: [
               ClipRRect(
@@ -199,8 +206,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-
-          // Right: Notification Bell Container
           Container(
             width: 48,
             height: 48,
@@ -237,12 +242,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Trending Section Layout
-  Widget _buildTrendingSection() {
+  Widget _buildTrendingSection(List<ArticleModel> trendingNews) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header (Trending + View All)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Row(
@@ -286,8 +289,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-
-        // Horizontal List View
         SizedBox(
           height: 290,
           child: ListView.separated(
@@ -296,10 +297,10 @@ class _HomeScreenState extends State<HomeScreen> {
               vertical: 8.0,
             ),
             scrollDirection: Axis.horizontal,
-            itemCount: dummyNews.length,
+            itemCount: trendingNews.length,
             separatorBuilder: (context, index) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
-              return _buildTrendingCard(dummyNews[index]);
+              return _buildTrendingCard(trendingNews[index]);
             },
           ),
         ),
@@ -307,43 +308,40 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Individual Trending Card
-  Widget _buildTrendingCard(Map<String, String> news) {
-    final title = news['title'] ?? '';
-    final source = news['source'] ?? '';
-    final time = news['time'] ?? '';
-    final imageUrl = news['imageUrl'] ?? '';
+  Widget _buildTrendingCard(ArticleModel news) {
+    final title = news.title ?? '';
+    final sourceName = news.source?.name ?? 'Unknown';
+    final timeStr = news.publishedAt != null
+        ? timeago.format(news.publishedAt!)
+        : '';
+    final imageUrl = news.urlToImage ?? '';
 
     return SizedBox(
       width: 270,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Image with rounded corners
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              imageUrl,
-              height: 150,
-              width: 270,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 150,
-                  width: 270,
-                  color: borderNeutral,
-                  child: const Icon(
-                    Icons.image_outlined,
-                    color: iconDarkSecondary,
-                    size: 40,
-                  ),
-                );
-              },
-            ),
+            child: imageUrl.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    height: 150,
+                    width: 270,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(
+                      child: GradientCircularProgressIndicator(
+                        size: 24,
+                        strokeWidth: 3,
+                        color: primaryColor,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) =>
+                        _buildImagePlaceholder(150, 270),
+                  )
+                : _buildImagePlaceholder(150, 270),
           ),
           const SizedBox(height: 12),
-
-          // 2. Headline Title (Poppins Bold)
           Text(
             title,
             maxLines: 2,
@@ -357,15 +355,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-
-          // 3. Source Info (Letter Avatar + Name + Time) - Option A
           Row(
             children: [
               CircleAvatar(
                 radius: 10,
                 backgroundColor: primaryColor.withValues(alpha: 0.1),
                 child: Text(
-                  source.isNotEmpty ? source[0] : 'N',
+                  sourceName.isNotEmpty ? sourceName[0] : 'N',
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -376,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '$source  •  $time',
+                  '$sourceName  •  $timeStr',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: xsRegular.copyWith(color: textNeutralSecondary),
@@ -385,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: () {
-                  final url = news['url'] ?? '';
+                  final url = news.url ?? '';
                   if (url.isNotEmpty) {
                     final messenger = ScaffoldMessenger.of(context);
                     Clipboard.setData(ClipboardData(text: url)).then((_) {
@@ -433,8 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Horizontal Scrollable Category Chips
-  Widget _buildCategorySection() {
+  Widget _buildCategorySection(String selectedCategory) {
     return Container(
       height: 38,
       margin: const EdgeInsets.only(top: 16.0, bottom: 8.0),
@@ -444,12 +439,10 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: categories.length,
         separatorBuilder: (context, index) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
-          final isSelected = _selectedCategoryIndex == index;
+          final isSelected = selectedCategory == categories[index];
           return GestureDetector(
             onTap: () {
-              setState(() {
-                _selectedCategoryIndex = index;
-              });
+              context.read<HomeNewsCubit>().changeCategory(categories[index]);
             },
             child: Container(
               padding: const EdgeInsets.symmetric(
@@ -482,14 +475,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Recent Stories Section Layout
-  Widget _buildRecentStoriesSection() {
-    final filteredStories = _filteredRecentStories;
-
+  Widget _buildRecentStoriesSection(List<ArticleModel> recentNews) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header (Recent Stories + View All)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Row(
@@ -533,9 +522,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-
-        // Vertical List of News Card
-        if (filteredStories.isEmpty)
+        if (recentNews.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Text(
@@ -552,10 +539,10 @@ class _HomeScreenState extends State<HomeScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            itemCount: filteredStories.length,
+            itemCount: recentNews.length,
             separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
-              return _buildRecentStoryCard(filteredStories[index]);
+              return _buildRecentStoryCard(recentNews[index]);
             },
           ),
         const SizedBox(height: 24),
@@ -563,27 +550,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Individual Recent Story Card (Option A: Left Details, Right Thumbnail + Share/More)
-  Widget _buildRecentStoryCard(Map<String, String> story) {
-    final title = story['title'] ?? '';
-    final authorName = story['authorName'] ?? '';
-    final authorAvatar = story['authorAvatar'] ?? '';
-    final time = story['time'] ?? '';
-    final imageUrl = story['imageUrl'] ?? '';
-    final category = story['category'] ?? '';
-    final url = story['url'] ?? '';
+  Widget _buildRecentStoryCard(ArticleModel story) {
+    final title = story.title ?? '';
+    final sourceName = story.source?.name ?? 'Unknown';
+    final timeStr = story.publishedAt != null
+        ? timeago.format(story.publishedAt!)
+        : '';
+    final imageUrl = story.urlToImage ?? '';
+    final url = story.url ?? '';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left Side: Headline and metadata
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Category tag
               Text(
-                category,
+                sourceName,
                 style: const TextStyle(
                   fontFamily: 'poppins',
                   fontSize: 11,
@@ -592,7 +576,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Headline Title
               Text(
                 title,
                 maxLines: 2,
@@ -606,50 +589,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Source info
               Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      authorAvatar,
-                      width: 20,
-                      height: 20,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          CircleAvatar(
-                            radius: 10,
-                            backgroundColor: primaryColor.withValues(
-                              alpha: 0.1,
-                            ),
-                            child: Text(
-                              authorName.isNotEmpty ? authorName[0] : 'N',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: primaryColor,
-                              ),
-                            ),
-                          ),
+                  CircleAvatar(
+                    radius: 10,
+                    backgroundColor: primaryColor.withValues(alpha: 0.1),
+                    child: Text(
+                      sourceName.isNotEmpty ? sourceName[0] : 'N',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    authorName,
-                    style: const TextStyle(
-                      fontFamily: 'poppins',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: textNeutralPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '•  $time',
-                    style: const TextStyle(
-                      fontFamily: 'poppins',
-                      fontSize: 12,
-                      color: textNeutralSecondary,
+                  Expanded(
+                    child: Text(
+                      '$sourceName  •  $timeStr',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'poppins',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: textNeutralPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -658,32 +623,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 16),
-        // Right Side: Image thumbnail + Share & More row below it
         Column(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                imageUrl,
-                width: 96,
-                height: 96,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 96,
-                    height: 96,
-                    color: borderNeutral,
-                    child: const Icon(
-                      Icons.image_outlined,
-                      color: iconDarkSecondary,
-                      size: 24,
-                    ),
-                  );
-                },
-              ),
+              child: imageUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: 96,
+                      height: 96,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: GradientCircularProgressIndicator(
+                          size: 20,
+                          strokeWidth: 2.5,
+                          color: primaryColor,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          _buildImagePlaceholder(96, 96),
+                    )
+                  : _buildImagePlaceholder(96, 96),
             ),
             const SizedBox(height: 8),
-            // Share & More actions (from layout screenshot)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -734,6 +696,207 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  // ===========================================================================
+  // WIDGET PLACEHOLDERS (SHIMMERS)
+  // ===========================================================================
+
+  Widget _buildWelcomeSectionPlaceholder() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              _buildShimmerContainer(width: 48, height: 48, borderRadius: 24),
+              const SizedBox(width: 12),
+              _buildShimmerContainer(width: 120, height: 16),
+            ],
+          ),
+          _buildShimmerContainer(width: 48, height: 48, borderRadius: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendingSectionPlaceholder() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildShimmerContainer(width: 100, height: 24),
+              _buildShimmerContainer(width: 60, height: 16),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 290,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 8.0,
+            ),
+            scrollDirection: Axis.horizontal,
+            itemCount: 3,
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              return SizedBox(
+                width: 270,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerContainer(
+                      width: 270,
+                      height: 150,
+                      borderRadius: 16,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildShimmerContainer(width: 240, height: 18),
+                    const SizedBox(height: 6),
+                    _buildShimmerContainer(width: 180, height: 18),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildShimmerContainer(
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildShimmerContainer(width: 120, height: 12),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySectionPlaceholder() {
+    return Container(
+      height: 38,
+      margin: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          return _buildShimmerContainer(
+            width: 80,
+            height: 38,
+            borderRadius: 20,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRecentStoriesPlaceholder() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildShimmerContainer(width: 120, height: 20),
+              _buildShimmerContainer(width: 60, height: 16),
+            ],
+          ),
+        ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          itemCount: 3,
+          separatorBuilder: (context, index) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildShimmerContainer(width: 80, height: 12),
+                      const SizedBox(height: 6),
+                      _buildShimmerContainer(
+                        width: double.infinity,
+                        height: 16,
+                      ),
+                      const SizedBox(height: 6),
+                      _buildShimmerContainer(width: 180, height: 16),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _buildShimmerContainer(
+                            width: 20,
+                            height: 20,
+                            borderRadius: 10,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildShimmerContainer(width: 100, height: 12),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                _buildShimmerContainer(width: 96, height: 96, borderRadius: 12),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ===========================================================================
+  // HELPERS
+  // ===========================================================================
+
+  Widget _buildImagePlaceholder(double height, double width) {
+    return Container(
+      height: height,
+      width: width,
+      color: borderNeutral,
+      child: const Icon(
+        Icons.image_outlined,
+        color: iconDarkSecondary,
+        size: 30,
+      ),
+    );
+  }
+
+  Widget _buildShimmerContainer({
+    required double width,
+    required double height,
+    double borderRadius = 8,
+  }) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+      ),
     );
   }
 }

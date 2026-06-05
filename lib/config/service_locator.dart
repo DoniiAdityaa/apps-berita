@@ -1,4 +1,6 @@
 import 'package:app_berita/config/user_preference.dart';
+import 'package:app_berita/features/home/cubit/home_news_cubit.dart';
+import 'package:app_berita/repository/news_repository.dart';
 import 'package:awesome_dio_interceptor/awesome_dio_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -43,4 +45,12 @@ Future<void> setUpLocator() async {
 
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
   serviceLocator.registerSingleton<PackageInfo>(packageInfo);
+
+  // Daftarkan NewsRepository (cukup panggil ApiService yang terdaftar di atas)
+  serviceLocator.registerLazySingleton<NewsRepository>(
+    () => NewsRepository(serviceLocator.get<ApiService>()),
+  );
+  serviceLocator.registerFactory<HomeNewsCubit>(
+    () => HomeNewsCubit(serviceLocator.get<NewsRepository>()),
+  );
 }
