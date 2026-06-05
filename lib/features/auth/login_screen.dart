@@ -1,5 +1,6 @@
+import 'package:app_berita/features/Navigation/navigation_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
 
@@ -31,9 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // 2. Google Login Button
                 _buildSocialButton(
-                  icon: FontAwesomeIcons.google,
+                  icon: 'assets/images/icons8-google.svg',
                   text: 'Continue with Google',
-                  iconColor: const Color(0xFFDE4032), // Google Brand Red
+
                   onTap: () {
                     // Handle Google Login
                   },
@@ -41,9 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // 3. Apple Login Button
                 _buildSocialButton(
-                  icon: FontAwesomeIcons.apple,
+                  icon: 'assets/images/icons8-apple.svg',
                   text: 'Continue with Apple',
-                  iconColor: Colors.black, // Apple Brand Black
+
                   onTap: () {
                     // Handle Apple Login
                   },
@@ -91,11 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.newspaper,
-                size: 50,
-                color: primaryColor,
-              ),
+              child: const Icon(Icons.newspaper, size: 50, color: primaryColor),
             );
           },
         ),
@@ -116,9 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           "Welcome! Let's dive in into your account!",
           textAlign: TextAlign.center,
-          style: smRegular.copyWith(
-            color: textNeutralSecondary,
-          ),
+          style: smRegular.copyWith(color: textNeutralSecondary),
         ),
       ],
     );
@@ -126,9 +121,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Reusable outlined button for third-party authentications (Google, Apple)
   Widget _buildSocialButton({
-    required FaIconData icon,
+    required String icon,
     required String text,
-    required Color iconColor,
     required VoidCallback onTap,
   }) {
     return Container(
@@ -149,20 +143,14 @@ class _LoginScreenState extends State<LoginScreen> {
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.only(left: 8.0),
-                child: FaIcon(
-                  icon,
-                  color: iconColor,
-                  size: 22,
-                ),
+                child: SvgPicture.asset(icon, width: 22, height: 22),
               ),
             ),
             Align(
               alignment: Alignment.center,
               child: Text(
                 text,
-                style: smSemiBold.copyWith(
-                  color: textNeutralPrimary,
-                ),
+                style: smSemiBold.copyWith(color: textNeutralPrimary),
               ),
             ),
           ],
@@ -181,15 +169,16 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(28),
         child: InkWell(
           onTap: () {
-            // Action to navigate to traditional password input screen
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => NavigationScreen()),
+            );
           },
           borderRadius: BorderRadius.circular(28),
           child: Center(
             child: Text(
               'Sign in with password',
-              style: smBold.copyWith(
-                color: Colors.white,
-              ),
+              style: smBold.copyWith(color: Colors.white),
             ),
           ),
         ),
@@ -204,20 +193,13 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           "Don't have an account? ",
-          style: smRegular.copyWith(
-            color: textNeutralSecondary,
-          ),
+          style: smRegular.copyWith(color: textNeutralSecondary),
         ),
         GestureDetector(
           onTap: () {
             // Navigate to register/sign-up screen
           },
-          child: Text(
-            'Sign up',
-            style: smBold.copyWith(
-              color: primaryColor,
-            ),
-          ),
+          child: Text('Sign up', style: smBold.copyWith(color: primaryColor)),
         ),
       ],
     );

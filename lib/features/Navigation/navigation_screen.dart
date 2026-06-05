@@ -2,10 +2,8 @@ import 'package:app_berita/features/home/home_screen.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-// ignore: must_be_immutable
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key, this.goToHistoryTransaction = false});
 
@@ -15,15 +13,38 @@ class NavigationScreen extends StatefulWidget {
   State<NavigationScreen> createState() => _NavigationScreenState();
 }
 
+class _OnboardScreenWidget extends StatelessWidget {
+  final String title;
+
+  const _OnboardScreenWidget({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgLight,
+      body: Center(
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Georgia',
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: textNeutralPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NavigationScreenState extends State<NavigationScreen> {
   int _initialIndex = 0;
 
   final List<Widget> screens = [
-    HomeScreen(),
-    // AllBottomSheet(),
-    // AssignmentScreen(),
-    // TransactionScreen(),
-    // ProfileScreen(),
+    const HomeScreen(),
+    const _OnboardScreenWidget(title: 'Explore Screen'),
+    const _OnboardScreenWidget(title: 'Bookmark Screen'),
+    const _OnboardScreenWidget(title: 'Profile Screen'),
   ];
 
   @override
@@ -51,28 +72,48 @@ class _NavigationScreenState extends State<NavigationScreen> {
             label: 'Home',
             icon: SvgPicture.asset(
               'assets/images/home.svg',
-              color: _initialIndex == 0 ? iconPrimary : iconDarkSecondary,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                _initialIndex == 0 ? iconPrimary : iconDarkSecondary,
+                BlendMode.srcIn,
+              ),
             ),
           ),
           BottomNavigationBarItem(
             label: 'Explore',
             icon: SvgPicture.asset(
               'assets/images/explore.svg',
-              color: _initialIndex == 1 ? iconPrimary : iconDarkSecondary,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                _initialIndex == 1 ? iconPrimary : iconDarkSecondary,
+                BlendMode.srcIn,
+              ),
             ),
           ),
           BottomNavigationBarItem(
             label: 'Bookmark',
             icon: SvgPicture.asset(
               'assets/images/bookmark.svg',
-              color: _initialIndex == 2 ? iconPrimary : iconDarkSecondary,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                _initialIndex == 2 ? iconPrimary : iconDarkSecondary,
+                BlendMode.srcIn,
+              ),
             ),
           ),
           BottomNavigationBarItem(
             label: 'Profile',
             icon: SvgPicture.asset(
-              'assets/images/profile.svg',
-              color: _initialIndex == 3 ? iconPrimary : iconDarkSecondary,
+              'assets/images/user.svg',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                _initialIndex == 3 ? iconPrimary : iconDarkSecondary,
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ],

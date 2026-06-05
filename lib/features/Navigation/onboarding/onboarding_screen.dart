@@ -58,7 +58,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _finishOnboarding() async {
     final userPreference = serviceLocator.get<UserPreference>();
-    
+
     // Save onboarding status so user doesn't see it again
     await userPreference.setHasSeenOnboarding(true);
 
@@ -69,7 +69,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => isLoggedIn ? NavigationScreen() : const LoginScreen(),
+          builder: (context) =>
+              isLoggedIn ? NavigationScreen() : const LoginScreen(),
         ),
         (route) => false,
       );
@@ -103,7 +104,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // Indicator Dots & Divider
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: _buildPageDots(),
@@ -111,15 +115,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
 
             // Horizontal Divider
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: borderNeutral,
-            ),
+            const Divider(height: 1, thickness: 1, color: borderNeutral),
 
             // Bottom Buttons (Skip & Continue)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: _buildActionButtonRow(),
             ),
           ],
@@ -138,10 +141,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Top 55% area: Image placeholder
-        Expanded(
-          flex: 11,
-          child: _buildImagePlaceholder(),
-        ),
+        Expanded(flex: 11, child: _buildImagePlaceholder()),
 
         // Bottom 45% area: Text details
         Expanded(
@@ -182,7 +182,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildImagePlaceholder() {
     return Container(
       width: double.infinity,
-      color: primaryColor.withValues(alpha: 0.06), // Light premium teal background
+      color: primaryColor.withValues(
+        alpha: 0.06,
+      ), // Light premium teal background
       child: Center(
         child: Container(
           width: 80,
@@ -198,11 +200,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.close,
-            size: 40,
-            color: primaryColor,
-          ),
+          child: const Icon(Icons.close, size: 40, color: primaryColor),
         ),
       ),
     );
@@ -217,67 +215,118 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          margin: const EdgeInsets.only(right: 6.0),
-          width: isActive ? 24.0 : 6.0,
-          height: 6.0,
+          margin: const EdgeInsets.only(right: 10),
+          width: isActive ? 28 : 10,
+          height: 10,
           decoration: BoxDecoration(
             color: isActive ? primaryColor : const Color(0xFFE4E4E7),
-            borderRadius: BorderRadius.circular(3.0),
+            borderRadius: BorderRadius.circular(12),
           ),
         );
       }),
     );
   }
 
-  /// Skip and Continue side-by-side buttons
+  /// Skip and Continue side-by-side buttons with premium expand/fade animations
   Widget _buildActionButtonRow() {
     final isLastPage = _currentIndex == _pages.length - 1;
 
-    return SizedBox(
-      height: 56,
-      child: Row(
-        children: [
-          // Skip Button
-          Expanded(
-            child: Material(
-              color: primaryColor.withValues(alpha: 0.08), // Translucent primary color
-              borderRadius: BorderRadius.circular(28),
-              child: InkWell(
-                onTap: _handleSkip,
-                borderRadius: BorderRadius.circular(28),
-                child: Center(
-                  child: Text(
-                    'Skip',
-                    style: smBold.copyWith(
-                      color: primaryColor,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        final spacing = isLastPage ? 0.0 : 16.0;
+
+        // Calculate button widths dynamically
+        final skipWidth = isLastPage ? 0.0 : (totalWidth - 16) / 2;
+        final continueWidth = isLastPage ? totalWidth : (totalWidth - 16) / 2;
+
+        return SizedBox(
+          height: 56,
+          child: Row(
+            children: [
+              // 1. Animated Container for Skip Button
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: skipWidth,
+                height: 56,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isLastPage ? 0.0 : 1.0,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: SizedBox(
+                      width: (totalWidth - 16) / 2,
+                      height: 56,
+                      child: Material(
+                        color: primaryColor.withValues(
+                          alpha: 0.08,
+                        ), // Translucent primary color
+                        borderRadius: BorderRadius.circular(28),
+                        child: InkWell(
+                          onTap: _handleSkip,
+                          borderRadius: BorderRadius.circular(28),
+                          child: Center(
+                            child: Text(
+                              'Skip',
+                              style: smBold.copyWith(color: primaryColor),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Continue / Get Started Button
-          Expanded(
-            child: Material(
-              color: primaryColor,
-              borderRadius: BorderRadius.circular(28),
-              child: InkWell(
-                onTap: _handleContinue,
-                borderRadius: BorderRadius.circular(28),
-                child: Center(
-                  child: Text(
-                    isLastPage ? 'Get Started' : 'Continue',
-                    style: smBold.copyWith(
-                      color: Colors.white,
+
+              // Animated spacing gap
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: spacing,
+              ),
+
+              // 2. Animated Container for Continue / Get Started Button
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: continueWidth,
+                height: 56,
+                child: Material(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(28),
+                  child: InkWell(
+                    onTap: _handleContinue,
+                    borderRadius: BorderRadius.circular(28),
+                    child: Center(
+                      // Animate the text transition (fade & scale)
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                              return ScaleTransition(
+                                scale: animation,
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                        child: Text(
+                          isLastPage ? 'Get Started' : 'Continue',
+                          key: ValueKey<bool>(isLastPage),
+                          style: smBold.copyWith(color: Colors.white),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -287,8 +336,5 @@ class _OnboardingPageData {
   final String title;
   final String subtitle;
 
-  const _OnboardingPageData({
-    required this.title,
-    required this.subtitle,
-  });
+  const _OnboardingPageData({required this.title, required this.subtitle});
 }

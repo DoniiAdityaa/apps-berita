@@ -8,16 +8,18 @@ import 'package:http/http.dart' as http;
 import 'constant.dart';
 
 class NotificationManager {
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   // Initialize settings for Android and iOS
   final AndroidInitializationSettings _initializationSettingsAndroid =
       const AndroidInitializationSettings('@drawable/app_icon');
-  final DarwinInitializationSettings _initializationSettingsDarwin = const DarwinInitializationSettings(
-    requestSoundPermission: false,
-    requestBadgePermission: false,
-    requestAlertPermission: false,
-  );
+  final DarwinInitializationSettings _initializationSettingsDarwin =
+      const DarwinInitializationSettings(
+        requestSoundPermission: false,
+        requestBadgePermission: false,
+        requestAlertPermission: false,
+      );
 
   late InitializationSettings _initializationSettings;
 
@@ -40,7 +42,8 @@ class NotificationManager {
     return _instance!;
   }
 
-  FlutterLocalNotificationsPlugin get flutterLocalNotificationsPlugin => _flutterLocalNotificationsPlugin;
+  FlutterLocalNotificationsPlugin get flutterLocalNotificationsPlugin =>
+      _flutterLocalNotificationsPlugin;
 
   InitializationSettings get initializationSettings => _initializationSettings;
 
@@ -55,19 +58,29 @@ class NotificationManager {
     String? imageUrl,
   }) async {
     if (imageUrl != null) {
-      final http.Response response = await http.get(Uri.parse("$baseImage/$imageUrl"));
+      final http.Response response = await http.get(Uri.parse(imageUrl));
 
-      final StyleInformation styleInformation =
-          BigPictureStyleInformation(ByteArrayAndroidBitmap.fromBase64String(base64Encode(response.bodyBytes)));
-      AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(channelId, channelName,
-          channelDescription: channelDescription,
-          importance: Importance.max,
-          priority: Priority.max,
-          styleInformation: styleInformation,
-          ticker: 'ticker');
-      DarwinNotificationDetails iOsPlatformChannelSpecifics = const DarwinNotificationDetails();
-      NotificationDetails platformChannelSpecifics =
-          NotificationDetails(android: androidPlatformChannelSpecifics, iOS: iOsPlatformChannelSpecifics);
+      final StyleInformation styleInformation = BigPictureStyleInformation(
+        ByteArrayAndroidBitmap.fromBase64String(
+          base64Encode(response.bodyBytes),
+        ),
+      );
+      AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+            channelId,
+            channelName,
+            channelDescription: channelDescription,
+            importance: Importance.max,
+            priority: Priority.max,
+            styleInformation: styleInformation,
+            ticker: 'ticker',
+          );
+      DarwinNotificationDetails iOsPlatformChannelSpecifics =
+          const DarwinNotificationDetails();
+      NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOsPlatformChannelSpecifics,
+      );
 
       await _flutterLocalNotificationsPlugin.show(
         id,
@@ -77,11 +90,21 @@ class NotificationManager {
         payload: payload,
       );
     } else {
-      AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(channelId, channelName,
-          channelDescription: channelDescription, importance: Importance.max, priority: Priority.max, ticker: 'ticker');
-      DarwinNotificationDetails iOsPlatformChannelSpecifics = const DarwinNotificationDetails();
-      NotificationDetails platformChannelSpecifics =
-          NotificationDetails(android: androidPlatformChannelSpecifics, iOS: iOsPlatformChannelSpecifics);
+      AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+            channelId,
+            channelName,
+            channelDescription: channelDescription,
+            importance: Importance.max,
+            priority: Priority.max,
+            ticker: 'ticker',
+          );
+      DarwinNotificationDetails iOsPlatformChannelSpecifics =
+          const DarwinNotificationDetails();
+      NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOsPlatformChannelSpecifics,
+      );
 
       await _flutterLocalNotificationsPlugin.show(
         id,
@@ -105,14 +128,16 @@ class NotificationManager {
     // ignore: avoid_print
     print("showPeriodicNotification");
 
-    AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      channelDescription: channelDescription,
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-    );
-    DarwinNotificationDetails iOsPlatformChannelSpecifics = const DarwinNotificationDetails();
+    AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        );
+    DarwinNotificationDetails iOsPlatformChannelSpecifics =
+        const DarwinNotificationDetails();
     NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOsPlatformChannelSpecifics,
@@ -141,14 +166,16 @@ class NotificationManager {
     required String payload,
     required DateTime dateTime,
   }) async {
-    AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      channelDescription: channelDescription,
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-    );
-    DarwinNotificationDetails iOsPlatformChannelSpecifics = const DarwinNotificationDetails();
+    AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        );
+    DarwinNotificationDetails iOsPlatformChannelSpecifics =
+        const DarwinNotificationDetails();
     NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOsPlatformChannelSpecifics,
@@ -166,7 +193,8 @@ class NotificationManager {
       scheduledDate.toUtc(),
       platformChannelSpecifics,
       payload: payload,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       androidScheduleMode: AndroidScheduleMode.exact,
     );
   }

@@ -53,7 +53,6 @@ class _SplashScreenState extends State<SplashScreen> {
     return _buildMainView();
   }
 
-
   Widget _buildMainView() {
     return Scaffold(
       body: Stack(
