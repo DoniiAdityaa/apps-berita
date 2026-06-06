@@ -1,4 +1,4 @@
-import 'package:app_berita/features/Navigation/navigation_screen.dart';
+import 'package:app_berita/features/auth/password_login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:app_berita/ui/color.dart';
@@ -169,9 +169,9 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(28),
         child: InkWell(
           onTap: () {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => NavigationScreen()),
+              MaterialPageRoute(builder: (context) => PasswordLoginScreen()),
             );
           },
           borderRadius: BorderRadius.circular(28),

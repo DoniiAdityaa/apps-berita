@@ -13,7 +13,7 @@ class NotificationManager {
 
   // Initialize settings for Android and iOS
   final AndroidInitializationSettings _initializationSettingsAndroid =
-      const AndroidInitializationSettings('@drawable/app_icon');
+      const AndroidInitializationSettings('@mipmap/ic_launcher');
   final DarwinInitializationSettings _initializationSettingsDarwin =
       const DarwinInitializationSettings(
         requestSoundPermission: false,
@@ -47,6 +47,19 @@ class NotificationManager {
 
   InitializationSettings get initializationSettings => _initializationSettings;
 
+  Future<void> init() async {
+    await _flutterLocalNotificationsPlugin.initialize(
+      _initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        final String? payload = response.payload;
+        if (payload != null) {
+          // ignore: avoid_print
+          print('notification payload: $payload');
+        }
+      },
+    );
+  }
+
   Future<void> showNotification({
     required int id,
     required String channelId,
@@ -76,7 +89,11 @@ class NotificationManager {
             ticker: 'ticker',
           );
       DarwinNotificationDetails iOsPlatformChannelSpecifics =
-          const DarwinNotificationDetails();
+          const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          );
       NotificationDetails platformChannelSpecifics = NotificationDetails(
         android: androidPlatformChannelSpecifics,
         iOS: iOsPlatformChannelSpecifics,
@@ -100,7 +117,11 @@ class NotificationManager {
             ticker: 'ticker',
           );
       DarwinNotificationDetails iOsPlatformChannelSpecifics =
-          const DarwinNotificationDetails();
+          const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          );
       NotificationDetails platformChannelSpecifics = NotificationDetails(
         android: androidPlatformChannelSpecifics,
         iOS: iOsPlatformChannelSpecifics,
@@ -133,11 +154,16 @@ class NotificationManager {
           channelId,
           channelName,
           channelDescription: channelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
         );
     DarwinNotificationDetails iOsPlatformChannelSpecifics =
-        const DarwinNotificationDetails();
+        const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
     NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOsPlatformChannelSpecifics,
@@ -171,11 +197,16 @@ class NotificationManager {
           channelId,
           channelName,
           channelDescription: channelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
         );
     DarwinNotificationDetails iOsPlatformChannelSpecifics =
-        const DarwinNotificationDetails();
+        const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
     NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOsPlatformChannelSpecifics,
@@ -190,16 +221,75 @@ class NotificationManager {
       id,
       title,
       body,
-      scheduledDate.toUtc(),
+      scheduledDate,
       platformChannelSpecifics,
       payload: payload,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.exact,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
 
   Future<void> cancelNotification(int id) async {
     await _flutterLocalNotificationsPlugin.cancel(id);
+  }
+
+  Future<void> scheduleDailyNotification({
+    required int id,
+    required String channelId,
+    required String channelName,
+    String? channelDescription,
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+  }) async {
+    AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+        );
+    DarwinNotificationDetails iOsPlatformChannelSpecifics =
+        const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
+    NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOsPlatformChannelSpecifics,
+    );
+
+    tz.initializeTimeZones();
+    final tz.Location location = tz.getLocation('Asia/Jakarta');
+    final tz.TZDateTime now = tz.TZDateTime.now(location);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      location,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledDate,
+      platformChannelSpecifics,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
   }
 }
