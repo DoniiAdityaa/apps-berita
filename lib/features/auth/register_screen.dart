@@ -305,7 +305,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             },
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: RichText(
             text: TextSpan(

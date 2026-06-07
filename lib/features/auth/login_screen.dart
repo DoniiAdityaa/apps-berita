@@ -1,4 +1,5 @@
 import 'package:app_berita/features/auth/password_login_screen.dart';
+import 'package:app_berita/features/auth/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:app_berita/ui/color.dart';
@@ -197,7 +198,10 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         GestureDetector(
           onTap: () {
-            // Navigate to register/sign-up screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => RegisterScreen()),
+            );
           },
           child: Text('Sign up', style: smBold.copyWith(color: primaryColor)),
         ),
