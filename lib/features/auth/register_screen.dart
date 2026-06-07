@@ -1,4 +1,8 @@
-import 'package:app_berita/ui/shared_widget/success_dialog.dart';
+import 'package:app_berita/config/service_locator.dart';
+import 'package:app_berita/config/user_preference.dart';
+import 'package:app_berita/features/legal/terms_policy_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
@@ -18,6 +22,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _agreeToTerms = false;
+  bool _isLoading = false;
+
+  Future<void> _handleSignUp() async {
+    // 1. Validasi form
+    if (!_formKey.currentState!.validate()) return;
+    // 2. Cek apakah sudah setuju Terms & Policy
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must agree to the Terms & Policy to register.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    // 3. Mulai loading
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      // 4. Daftarkan akun baru ke Firebase Auth
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+      // 5. Ambil uid dari user yang baru terdaftar
+      final uid = credential.user!.uid;
+      // 6. Simpan token (uid) ke local storage
+      final userPreference = serviceLocator.get<UserPreference>();
+      await userPreference.setToken(uid);
+      // 7. Navigasi ke OnboardingFlowScreen (isi profile)
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingFlowScreen()),
+          (route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      // 8. Handle specific Firebase errors
+      String message;
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = 'This email is already registered. Please sign in.';
+          break;
+        case 'weak-password':
+          message = 'Password is too weak. Minimum 6 characters required.';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email format.';
+          break;
+        default:
+          message = e.message ?? 'An unexpected error occurred.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -315,6 +387,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextSpan(
                   text: 'Terms, & Policy.',
                   style: smBold.copyWith(color: primaryColor),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TermsPolicyScreen(),
+                        ),
+                      );
+                    },
                 ),
               ],
             ),
@@ -351,40 +432,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       height: 56,
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            if (!_agreeToTerms) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'You must agree to the Terms & Policy to register.',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              return;
-            }
-
-            SuccessDialog.show(
-              context,
-              title: 'Registration Successful!',
-              subtitle: 'Please wait...\nYour account is being created.',
-            );
-
-            final navigator = Navigator.of(context);
-
-            Future.delayed(const Duration(seconds: 3), () {
-              navigator.pop(); // Close dialog
-
-              navigator.pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => const OnboardingFlowScreen(),
-                ),
-                (route) => false,
-              );
-            });
-          }
-        },
+        onPressed: _isLoading ? null : () => _handleSignUp(),
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           shape: RoundedRectangleBorder(
@@ -392,10 +440,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           elevation: 0,
         ),
-        child: Text(
-          'Sign up',
-          style: smBold.copyWith(color: Colors.white, fontSize: 16),
-        ),
+        child: _isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(
+                'Sign up',
+                style: smBold.copyWith(color: Colors.white, fontSize: 16),
+              ),
       ),
     );
   }

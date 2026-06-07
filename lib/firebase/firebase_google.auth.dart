@@ -8,6 +8,9 @@ import 'package:app_berita/firebase_options.dart';
 import '../config/constant.dart';
 
 class FirebaseGoogleAuth {
+  static const String _webClientId =
+      '71642798131-skne7rvusatpcftrgqng3ies37ag6jle.apps.googleusercontent.com';
+
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final FirebaseDatabaseSender _firebaseDatabaseSender =
@@ -24,6 +27,9 @@ class FirebaseGoogleAuth {
     required Function(String message) onError,
   }) async {
     try {
+      // Inisialisasi GoogleSignIn dengan serverClientId (wajib untuk Android v7.x)
+      await _googleSignIn.initialize(serverClientId: _webClientId);
+
       try {
         await _googleSignIn.signOut();
       } catch (e) {
@@ -89,6 +95,8 @@ class FirebaseGoogleAuth {
 
   Future<GoogleSignInAccount?> getGoogleAccount() async {
     try {
+      await _googleSignIn.initialize(serverClientId: _webClientId);
+
       try {
         await _googleSignIn.signOut();
       } catch (e) {

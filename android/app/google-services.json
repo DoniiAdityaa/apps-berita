@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "71642798131",
+    "firebase_url": "https://apps-berita-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "apps-berita",
     "storage_bucket": "apps-berita.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.app_berita"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "71642798131-u8p32jvqutmu9r8vq59ik40ujsqgcruf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app_berita",
+            "certificate_hash": "f021e546ee1428c942b8852567184a64d6004255"
+          }
+        },
+        {
+          "client_id": "71642798131-skne7rvusatpcftrgqng3ies37ag6jle.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA4lcvlpkivaccbgD1osksAny_EYpCFMsM"
@@ -20,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "71642798131-skne7rvusatpcftrgqng3ies37ag6jle.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "71642798131-ttc0jsgapig0p49l8g4t1bcl22eba7a0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.appBerita"
+              }
+            }
+          ]
         }
       }
     }

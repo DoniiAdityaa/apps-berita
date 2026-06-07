@@ -1,5 +1,12 @@
+import 'package:app_berita/config/constant.dart';
+import 'package:app_berita/config/service_locator.dart';
+import 'package:app_berita/config/user_preference.dart';
+import 'package:app_berita/features/auth/country_selection/onboarding_flow_screen.dart';
 import 'package:app_berita/features/auth/register_screen.dart';
-import 'package:app_berita/ui/shared_widget/success_dialog.dart';
+import 'package:app_berita/model/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
@@ -19,12 +26,123 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _isLoading = false;
+
+  Future<void> _handleSignIn() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 1. Login ke Firebase Auth
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      final uid = credential.user!.uid;
+      final email = credential.user!.email ?? '';
+
+      // Simpan atau hapus email sesuai checkbox Remember Me
+      final prefs = serviceLocator.get<UserPreference>().prefs;
+      if (_rememberMe) {
+        await prefs.setString('remembered_email', _emailController.text.trim());
+      } else {
+        await prefs.remove('remembered_email');
+      }
+
+      // 2. Cek database: apakah profile user sudah lengkap?
+      final ref = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: firebaseDatabaseUrl,
+      ).ref();
+
+      final snapshot = await ref.child('users/$uid').get();
+      final userPreference = serviceLocator.get<UserPreference>();
+
+      if (snapshot.exists) {
+        // 3a. User lama (profile lengkap) → langsung ke Home
+        final userData = Map<String, dynamic>.from(snapshot.value as Map);
+        final userModel = UserModel.fromJson(userData);
+        await userPreference.setToken(uid);
+        await userPreference.setUser(userModel);
+        await userPreference.setHasSeenOnboarding(true);
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const NavigationScreen()),
+            (route) => false,
+          );
+        }
+      } else {
+        // 3b. User baru (belum isi profile) → ke OnboardingFlow
+        await userPreference.setToken(uid);
+        final userModel = UserModel(id: uid, email: email);
+        await userPreference.setUser(userModel);
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingFlowScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'No account found with this email.';
+          break;
+        case 'wrong-password':
+          message = 'Incorrect password. Please try again.';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email format.';
+          break;
+        case 'user-disabled':
+          message = 'This account has been disabled.';
+          break;
+        case 'invalid-credential':
+          message = 'Invalid email or password.';
+          break;
+        default:
+          message = e.message ?? 'An unexpected error occurred.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _emailController.addListener(_onTextChange);
     _passwordController.addListener(_onTextChange);
+    _loadRememberedEmail();
+  }
+
+  Future<void> _loadRememberedEmail() async {
+    final userPreference = serviceLocator.get<UserPreference>();
+    final savedEmail = userPreference.prefs.getString('remembered_email');
+    if (savedEmail != null && savedEmail.isNotEmpty) {
+      _emailController.text = savedEmail;
+      setState(() {
+        _rememberMe = true;
+      });
+    }
   }
 
   void _onTextChange() {
@@ -367,24 +485,7 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
       height: 56,
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            SuccessDialog.show(context);
-
-            final navigator = Navigator.of(context);
-
-            Future.delayed(const Duration(seconds: 3), () {
-              navigator.pop(); // Close dialog
-
-              navigator.pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => const NavigationScreen(),
-                ),
-                (route) => false,
-              );
-            });
-          }
-        },
+        onPressed: _isLoading ? null : () => _handleSignIn(),
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           shape: RoundedRectangleBorder(
@@ -392,10 +493,12 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
           ),
           elevation: 0,
         ),
-        child: Text(
-          'Sign in',
-          style: smBold.copyWith(color: Colors.white, fontSize: 16),
-        ),
+        child: _isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(
+                'Sign in',
+                style: smBold.copyWith(color: Colors.white, fontSize: 16),
+              ),
       ),
     );
   }

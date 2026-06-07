@@ -26,6 +26,14 @@ class MyApp extends StatelessWidget {
       providers: [BlocProvider(create: (_) => serviceLocator<HomeNewsCubit>())],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          return GestureDetector(
+            onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+            },
+            child: child,
+          );
+        },
         theme: AppTheme.light,
         home: const SplashScreen(),
       ),

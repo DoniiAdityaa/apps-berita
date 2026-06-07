@@ -9,6 +9,12 @@ import 'package:app_berita/config/notification_manager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_berita/features/auth/login_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app_berita/model/user_model.dart';
+import 'package:app_berita/config/service_locator.dart';
+import 'package:app_berita/config/user_preference.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
   const OnboardingFlowScreen({super.key});
@@ -54,6 +60,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   String? _selectedAvatarUrl;
+
+  // 5. Loading state for Finish button
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -1232,7 +1241,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         height: 56,
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: isEnabled ? _saveProfileAndFinish : null,
+          onPressed: (isEnabled && !_isSaving) ? _saveProfileAndFinish : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryColor,
             disabledBackgroundColor: primaryColor.withValues(alpha: 0.4),
@@ -1241,15 +1250,24 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             ),
             elevation: 0,
           ),
-          child: Text(
-            'Finish',
-            style: smBold.copyWith(
-              color: isEnabled
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.6),
-              fontSize: 16,
-            ),
-          ),
+          child: _isSaving
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
+              : Text(
+                  'Finish',
+                  style: smBold.copyWith(
+                    color: isEnabled
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.6),
+                    fontSize: 16,
+                  ),
+                ),
         ),
       ),
     );
@@ -1453,6 +1471,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   Future<void> _saveProfileAndFinish() async {
+    setState(() {
+      _isSaving = true;
+    });
+
     final prefs = await SharedPreferences.getInstance();
 
     if (_selectedCountryCode != null) {
@@ -1470,6 +1492,38 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     await prefs.setString('profile_bio', _bioController.text.trim());
     await prefs.setString('profile_avatar_url', _selectedAvatarUrl ?? '');
     await prefs.setBool('onboarding_completed', true);
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        final uid = currentUser.uid;
+        final email = currentUser.email ?? '';
+        
+        final ref = FirebaseDatabase.instanceFor(
+          app: Firebase.app(),
+          databaseURL: firebaseDatabaseUrl,
+        ).ref();
+
+        final userModel = UserModel(
+          id: uid,
+          name: _fullNameController.text.trim(),
+          email: email,
+          photo: _selectedAvatarUrl,
+          username: username,
+          bio: _bioController.text.trim(),
+          country: _selectedCountryCode,
+          topics: _selectedTopics.toList(),
+        );
+
+        await ref.child('users/$uid').set(userModel.toJson());
+
+        final userPreference = serviceLocator.get<UserPreference>();
+        await userPreference.setUser(userModel);
+        await userPreference.setToken(uid);
+      }
+    } catch (e) {
+      debugPrint('Error saving user profile to Firebase: $e');
+    }
 
     if (mounted) {
       Navigator.pushAndRemoveUntil(

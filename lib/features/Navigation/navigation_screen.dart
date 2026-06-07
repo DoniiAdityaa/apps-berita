@@ -1,4 +1,5 @@
 import 'package:app_berita/features/home/home_screen.dart';
+import 'package:app_berita/features/profile/profile_screen.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +45,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     const HomeScreen(),
     const _OnboardScreenWidget(title: 'Explore Screen'),
     const _OnboardScreenWidget(title: 'Bookmark Screen'),
-    const _OnboardScreenWidget(title: 'Profile Screen'),
+    const ProfileScreen(),
   ];
 
   @override

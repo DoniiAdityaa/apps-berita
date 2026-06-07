@@ -1,9 +1,20 @@
+import 'package:app_berita/config/constant.dart';
+import 'package:app_berita/config/service_locator.dart';
+import 'package:app_berita/config/user_preference.dart';
+import 'package:app_berita/features/Navigation/navigation_screen.dart';
+import 'package:app_berita/features/auth/country_selection/onboarding_flow_screen.dart';
 import 'package:app_berita/features/auth/password_login_screen.dart';
 import 'package:app_berita/features/auth/register_screen.dart';
+import 'package:app_berita/firebase/firebase_apple_auth.dart';
+import 'package:app_berita/firebase/firebase_google.auth.dart';
+import 'package:app_berita/model/user_model.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
+import 'package:app_berita/ui/shared_widget/loading_indicator.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,59 +24,183 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final FirebaseGoogleAuth _googleAuth = FirebaseGoogleAuth();
+  final FirebaseAppleAuth _appleAuth = FirebaseAppleAuth();
+  bool _isLoading = false;
+
+  Future<void> _handleUserNavigation(
+    String uid,
+    String email,
+    String name,
+    String? photo,
+  ) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final ref = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: firebaseDatabaseUrl,
+      ).ref();
+      // 1. Hapus titik setelah await
+      final snapshot = await ref.child('users/$uid').get();
+      // 2. Gunakan userPreference (huruf kecil)
+      final userPreference = serviceLocator.get<UserPreference>();
+      if (snapshot.exists) {
+        final userData = Map<String, dynamic>.from(snapshot.value as Map);
+
+        // 3. Gunakan UserModel (huruf besar)
+        final userModel = UserModel.fromJson(userData);
+        // 4. Sesuaikan panggilannya ke userPreference (huruf kecil) dan method yang benar
+        await userPreference.setToken(uid);
+        await userPreference.setUser(userModel);
+        await userPreference.setHasSeenOnboarding(true);
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const NavigationScreen()),
+            (route) => false,
+          );
+        }
+      } else {
+        // user baru -> arahkan ke onboarding flow
+        await userPreference.setToken(uid);
+
+        // buat data User dasar(sementara)
+        final userModel = UserModel(
+          id: uid,
+          email: email,
+          name: name,
+          photo: photo,
+        );
+        await userPreference.setUser(userModel);
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingFlowScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load user profile: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgLight,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 60),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 60),
 
-                // 1. Logo & App Title
-                _buildLogoHeader(),
+                    // 1. Logo & App Title
+                    _buildLogoHeader(),
 
-                const SizedBox(height: 48),
+                    const SizedBox(height: 48),
 
-                // 2. Google Login Button
-                _buildSocialButton(
-                  icon: 'assets/images/icons8-google.svg',
-                  text: 'Continue with Google',
+                    // 2. Google Login Button
+                    _buildSocialButton(
+                      icon: 'assets/images/icons8-google.svg',
+                      text: 'Continue with Google',
+                      onTap: () {
+                        if (_isLoading) return;
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        _googleAuth.signInWithGoogle(
+                          onSuccess: (uid, email, firstName, lastName) {
+                            final fullName = '$firstName $lastName'.trim();
+                            _handleUserNavigation(uid, email, fullName, null);
+                          },
+                          onError: (message) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+                            if (message.isNotEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Google Sign-In Error: $message')),
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
 
-                  onTap: () {
-                    // Handle Google Login
-                  },
+                    // 3. Apple Login Button
+                    _buildSocialButton(
+                      icon: 'assets/images/icons8-apple.svg',
+                      text: 'Continue with Apple',
+                      onTap: () {
+                        if (_isLoading) return;
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        _appleAuth.signInWithApple(
+                          onSuccess: (uid, appleId, name, email) {
+                            _handleUserNavigation(uid, email, name, null);
+                          },
+                          onError: (message) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+                            if (message.isNotEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Apple Sign-In Error: $message')),
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // 4. Sign in with password Button (Tosca)
+                    _buildPasswordSignInButton(),
+
+                    const SizedBox(height: 48),
+
+                    // 5. Sign up Option
+                    _buildSignUpFooter(),
+
+                    const SizedBox(height: 24),
+                  ],
                 ),
-
-                // 3. Apple Login Button
-                _buildSocialButton(
-                  icon: 'assets/images/icons8-apple.svg',
-                  text: 'Continue with Apple',
-
-                  onTap: () {
-                    // Handle Apple Login
-                  },
-                ),
-
-                const SizedBox(height: 32),
-
-                // 4. Sign in with password Button (Tosca)
-                _buildPasswordSignInButton(),
-
-                const SizedBox(height: 48),
-
-                // 5. Sign up Option
-                _buildSignUpFooter(),
-
-                const SizedBox(height: 24),
-              ],
+              ),
             ),
           ),
-        ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: GradientCircularProgressIndicator(
+                  size: 45,
+                  strokeWidth: 7,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -12,8 +12,25 @@ class UserModel {
   String? email;
   @JsonKey(name: "photo")
   String? photo;
+  @JsonKey(name: "username")
+  String? username;
+  @JsonKey(name: "bio")
+  String? bio;
+  @JsonKey(name: "country")
+  String? country;
+  @JsonKey(name: "topics")
+  List<String>? topics;
 
-  UserModel({this.id, this.name, this.email, this.photo});
+  UserModel({
+    this.id,
+    this.name,
+    this.email,
+    this.photo,
+    this.username,
+    this.bio,
+    this.country,
+    this.topics,
+  });
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
       _$UserModelFromJson(json);
