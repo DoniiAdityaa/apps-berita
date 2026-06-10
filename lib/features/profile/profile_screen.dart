@@ -18,8 +18,21 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  int _selectedTab = 0; // 0 = Saved, 1 = History
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   // Dummy Saved Articles
   final List<ArticleModel> _dummySavedArticles = [
@@ -123,8 +136,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return 'Tech enthusiast, likes to share stories about technology, and the digital world.';
   }
 
-
-
   void _shareProfile() {
     final link =
         'https://appberita.com/profile/${_getUserUsername().substring(1)}';
@@ -144,34 +155,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeArticles = _selectedTab == 0
-        ? _dummySavedArticles
-        : _dummyHistoryArticles;
-
     return Scaffold(
       backgroundColor: bgLight,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              _buildProfileHeader(),
-              const SizedBox(height: 16),
-              _buildBioSection(),
-              const SizedBox(height: 24),
-              _buildStatsSection(),
-              const SizedBox(height: 24),
-              const Divider(color: borderNeutral, height: 1),
-              const SizedBox(height: 20),
-              _buildTabBar(),
-              const SizedBox(height: 20),
-              _buildArticleList(activeArticles),
-              const SizedBox(height: 32),
-            ],
-          ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  _buildProfileHeader(),
+                  const SizedBox(height: 16),
+                  _buildBioSection(),
+                  const SizedBox(height: 24),
+                  _buildStatsSection(),
+                  const SizedBox(height: 24),
+                  const Divider(color: borderNeutral, height: 1),
+                  const SizedBox(height: 16),
+                  _buildTabBar(),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildArticleList(_dummySavedArticles),
+                  _buildArticleList(_dummyHistoryArticles),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -232,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         CircleAvatar(
           radius: 40,
-          backgroundColor: borderNeutral,
+          backgroundColor: Colors.transparent,
           backgroundImage: CachedNetworkImageProvider(_getUserPhotoUrl()),
         ),
         const SizedBox(width: 16),
@@ -266,7 +284,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+              MaterialPageRoute(
+                builder: (context) => const EditProfileScreen(),
+              ),
             ).then((value) {
               if (value == true) {
                 setState(() {});
@@ -356,53 +376,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildTabBar() {
-    return Row(
-      children: [
-        _buildTabItem(0, 'Saved'),
-        const SizedBox(width: 24),
-        _buildTabItem(1, 'History'),
-      ],
-    );
-  }
-
-  Widget _buildTabItem(int index, String title) {
-    final isSelected = _selectedTab == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTab = index;
-        });
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontFamily: 'poppins',
-              fontSize: 16,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              color: isSelected ? textNeutralPrimary : textNeutralSecondary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            height: 3,
-            width: 40,
-            decoration: BoxDecoration(
-              color: isSelected ? primaryColor : Colors.transparent,
-              borderRadius: BorderRadius.circular(1.5),
-            ),
-          ),
-        ],
+    return TabBar(
+      controller: _tabController,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      indicatorColor: primaryColor,
+      indicatorSize: TabBarIndicatorSize.label,
+      indicatorWeight: 3.0,
+      dividerColor: Colors.transparent,
+      labelColor: textNeutralPrimary,
+      unselectedLabelColor: textNeutralSecondary,
+      overlayColor: WidgetStateProperty.all(
+        Colors.transparent,
+      ), // Menghilangkan kotak sorot
+      splashFactory:
+          NoSplash.splashFactory, // Menghilangkan efek ripple/cipratan air
+      labelStyle: const TextStyle(
+        fontFamily: 'poppins',
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
       ),
+      unselectedLabelStyle: const TextStyle(
+        fontFamily: 'poppins',
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      labelPadding: const EdgeInsets.only(right: 24.0),
+      tabs: const [
+        Tab(text: 'Saved'),
+        Tab(text: 'History'),
+      ],
     );
   }
 
   Widget _buildArticleList(List<ArticleModel> articles) {
     if (articles.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
+        padding: EdgeInsets.symmetric(vertical: 40, horizontal: 24),
         child: Center(
           child: Text(
             'No articles found.',
@@ -417,8 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       itemCount: articles.length,
       separatorBuilder: (context, index) => const Padding(
         padding: EdgeInsets.symmetric(vertical: 16),

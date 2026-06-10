@@ -222,7 +222,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: ClipOval(
                 child: _selectedAvatarUrl == null
                     ? Container(
-                        color: bgSurfaceNeutral,
+                        color: Colors.transparent,
                         child: const Icon(
                           Icons.person_rounded,
                           size: 60,
@@ -241,7 +241,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           );
                         },
                         errorBuilder: (context, error, stackTrace) => Container(
-                          color: bgSurfaceNeutral,
+                          color: Colors.transparent,
                           child: const Icon(
                             Icons.person_rounded,
                             size: 60,
@@ -287,6 +287,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
     );
   }
+
   Widget _buildProfileTextField({
     required TextEditingController controller,
     required String hintText,
@@ -304,7 +305,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         fontFamily: 'poppins',
         fontSize: 15,
         fontWeight: FontWeight.w500,
-        color: enabled ? textNeutralPrimary : textNeutralSecondary.withValues(alpha: 0.6),
+        color: enabled
+            ? textNeutralPrimary
+            : textNeutralSecondary.withValues(alpha: 0.6),
       ),
       decoration: InputDecoration(
         hintText: hintText,
@@ -316,7 +319,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           fontFamily: 'poppins',
           fontSize: 15,
           fontWeight: FontWeight.w500,
-          color: enabled ? textNeutralPrimary : textNeutralSecondary.withValues(alpha: 0.6),
+          color: enabled
+              ? textNeutralPrimary
+              : textNeutralSecondary.withValues(alpha: 0.6),
         ),
         filled: true,
         fillColor: enabled ? Colors.white : bgSurfaceNeutral,
@@ -349,6 +354,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       },
     );
   }
+
   Widget _buildSaveButton() {
     return Container(
       padding: const EdgeInsets.all(24),

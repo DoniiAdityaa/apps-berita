@@ -1,3 +1,4 @@
+import 'package:app_berita/features/home/recent_stories_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +11,9 @@ import 'package:app_berita/model/article_model.dart';
 import 'package:app_berita/ui/color.dart';
 import 'package:app_berita/ui/typography.dart';
 import 'package:app_berita/ui/shared_widget/loading_indicator.dart';
+import 'package:app_berita/config/service_locator.dart';
+import 'package:app_berita/config/user_preference.dart';
+import 'package:app_berita/features/home/trending_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -155,11 +159,11 @@ class _HomeScreenState extends State<HomeScreen> {
             // 3. Category Filter Section
             _buildCategorySection(state.selectedCategory),
 
-            // 4. Recent Stories Section (Menggunakan shimmer khusus jika hanya kategori yang reload)
-            if (state.isRecentLoading)
-              _buildRecentStoriesPlaceholder()
-            else
-              _buildRecentStoriesSection(state.recentNews),
+            // 4. Recent Stories Section
+            _buildRecentStoriesSection(
+              state.recentNews,
+              isRecentLoading: state.isRecentLoading,
+            ),
           ],
         ),
       ),
@@ -171,41 +175,77 @@ class _HomeScreenState extends State<HomeScreen> {
   // ===========================================================================
 
   Widget _buildWelcomeSection() {
+    final user = serviceLocator<UserPreference>().getUser();
+    final name = user.name ?? 'Guest';
+    final photoUrl = user.photo ?? '';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const CircleAvatar(
-                      radius: 24,
-                      backgroundColor: borderNeutral,
-                      child: Icon(Icons.person, color: iconDarkSecondary),
-                    );
-                  },
+          // Left: User Profile & Info
+          Expanded(
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: photoUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: photoUrl,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              color: Colors.white,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) =>
+                              const CircleAvatar(
+                                radius: 24,
+                                backgroundColor: borderNeutral,
+                                child: Icon(
+                                  Icons.person,
+                                  color: iconDarkSecondary,
+                                ),
+                              ),
+                        )
+                      : const CircleAvatar(
+                          radius: 24,
+                          backgroundColor: borderNeutral,
+                          child: Icon(Icons.person, color: iconDarkSecondary),
+                        ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Andrew Ainsley',
-                style: TextStyle(
-                  fontFamily: 'Georgia',
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: textNeutralPrimary,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name.isNotEmpty ? name : 'Guest',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textNeutralPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          const SizedBox(width: 16),
+          // Right: Notification Bell Icon
           Container(
             width: 48,
             height: 48,
@@ -262,11 +302,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  // ==========================================
-                  // TARUH NAVIGATOR PUSH ANDA DI SINI UNTUK
-                  // PINDAH KE HALAMAN BARU (TRENDING NEWS LIST)
-                  // ==========================================
-                  print('View All Trending News');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TrendingListScreen(),
+                    ),
+                  );
                 },
                 child: Row(
                   children: [
@@ -329,6 +370,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 150,
                     width: 270,
                     fit: BoxFit.cover,
+                    memCacheHeight: 250,
+
                     placeholder: (context, url) => const Center(
                       child: GradientCircularProgressIndicator(
                         size: 24,
@@ -475,7 +518,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildRecentStoriesSection(List<ArticleModel> recentNews) {
+  Widget _buildRecentStoriesSection(
+    List<ArticleModel> recentNews, {
+    bool isRecentLoading = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -495,11 +541,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  // ==========================================
-                  // TARUH NAVIGATOR PUSH ANDA DI SINI UNTUK
-                  // PINDAH KE HALAMAN BARU (RECENT STORIES LIST)
-                  // ==========================================
-                  print('View All Recent Stories');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RecentStoriesListScreen(),
+                    ),
+                  );
                 },
                 child: Row(
                   children: [
@@ -522,7 +569,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        if (recentNews.isEmpty)
+        if (isRecentLoading)
+          _buildRecentStoriesListPlaceholder()
+        else if (recentNews.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Text(
@@ -550,6 +599,49 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildRecentStoriesListPlaceholder() {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      itemCount: 3,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildShimmerContainer(width: 80, height: 12),
+                  const SizedBox(height: 6),
+                  _buildShimmerContainer(width: double.infinity, height: 16),
+                  const SizedBox(height: 6),
+                  _buildShimmerContainer(width: 180, height: 16),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _buildShimmerContainer(
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildShimmerContainer(width: 100, height: 12),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            _buildShimmerContainer(width: 96, height: 96, borderRadius: 12),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildRecentStoryCard(ArticleModel story) {
     final title = story.title ?? '';
     final sourceName = story.source?.name ?? 'Unknown';
@@ -566,15 +658,15 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                sourceName,
-                style: const TextStyle(
-                  fontFamily: 'poppins',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: textNeutralSecondary,
-                ),
-              ),
+              // Text(
+              //   sourceName,
+              //   style: const TextStyle(
+              //     fontFamily: 'poppins',
+              //     fontSize: 11,
+              //     fontWeight: FontWeight.w500,
+              //     color: textNeutralSecondary,
+              //   ),
+              // ),
               const SizedBox(height: 4),
               Text(
                 title,
@@ -785,8 +877,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategorySectionPlaceholder() {
     return Container(
-      height: 38,
-      margin: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      height: 25,
+      margin: const EdgeInsets.only(top: 5, bottom: 8.0),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         scrollDirection: Axis.horizontal,

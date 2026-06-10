@@ -51,6 +51,9 @@ Future<void> setUpLocator() async {
     () => NewsRepository(serviceLocator.get<ApiService>()),
   );
   serviceLocator.registerFactory<HomeNewsCubit>(
-    () => HomeNewsCubit(serviceLocator.get<NewsRepository>()),
+    () => HomeNewsCubit(
+      serviceLocator.get<NewsRepository>(),
+      serviceLocator.get<UserPreference>(),
+    ),
   );
 }

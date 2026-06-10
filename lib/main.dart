@@ -22,8 +22,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [BlocProvider(create: (_) => serviceLocator<HomeNewsCubit>())],
+    return BlocProvider(
+      create: (_) => serviceLocator<HomeNewsCubit>(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
